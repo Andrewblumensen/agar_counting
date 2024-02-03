@@ -1,11 +1,12 @@
 {
     "num_epochs": 40,
-    "batch_size": 16,
+    "batch_size": 64,
     "learning_rate": 0.001,
     "weightdecay": 0.001,
-    "model": "resnet",
+    "model": "resnet18",
     "loss": "l1",
-    "val_split": 0.9
+    "val_split": 0.9,
+    "dataset": "big"
 }
 
 
