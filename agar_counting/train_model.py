@@ -14,18 +14,17 @@ import statistics
 import wandb
 import datetime
 
-
-
+# Check for CUDA availability
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
 
 # Initialize wandb
 wandb.login(key="ca8b8153dd94925f61e5df4e4fc0bf7b8b234ecc")
-wandb.init(project='MT_agar1')
-
+wandb.init(project='MT_agar1', name="Restnet-18 big DS")
 
 # Read config from JSON file
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
-
 
 num_epochs = config['num_epochs']
 batch_size = config['batch_size']
@@ -34,8 +33,9 @@ weight_decay = config['weightdecay']
 model_name = config['model']
 loss_f = config['loss']
 val_split = config['val_split']
+dataset_size = config['dataset']
 
-wandb.config.update(config)
+wandb.config.update(config, allow_val_change=True)
 
 # Define transforms
 transform = transforms.Compose([
@@ -45,9 +45,14 @@ transform = transforms.Compose([
 ])
 
 # Set paths to your image and annotation folders
-image_folder = '../data/raw/images'
-annotation_folder = '../data/raw/annotations'
 
+if dataset_size == "big":
+    image_folder = '../data/raw/images_big'
+    annotation_folder = '../data/raw/annotations_big'
+elif dataset_size == "small":
+    image_folder = '../data/raw/images'
+    annotation_folder = '../data/raw/annotations'
+    
 # Create dataset
 dataset = BacteriaDataset(image_folder, annotation_folder, transform=transform)
 
@@ -67,19 +72,17 @@ train_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
 val_loader = DataLoader(dataset, batch_size=batch_size, sampler=val_sampler)
 
 # Initialize model, loss function, and optimizer
-
-if model_name == "resnet":
-    model = TransferLearningColonyCounter()
+if model_name == "resnet18":
+    model = TransferLearningColonyCounter().to(device)
 elif model_name == "cnn":
-    model = ColonyCounter()
+    model = ColonyCounter().to(device)
 
 if loss_f == "l1":
     criterion = nn.L1Loss()
 elif loss_f == "l2":
     criterion = nn.MSELoss()
 
-
-optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay= weight_decay)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
 # Define a function to calculate the average distance between true labels and predictions
 def calculate_avg_distance(labels, predictions):
@@ -93,6 +96,7 @@ for epoch in range(num_epochs):
     total_loss = 0.0
     with tqdm(total=len(train_loader)) as pbar:
         for images, labels in train_loader:
+            images, labels = images.to(device), labels.to(device)  # Move data to GPU if available
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels.float().unsqueeze(1))
@@ -113,6 +117,7 @@ for epoch in range(num_epochs):
     total_val_loss = 0.0
     with torch.no_grad():
         for images, labels in val_loader:
+            images, labels = images.to(device), labels.to(device)  # Move data to GPU if available
             outputs = model(images)
             val_loss = criterion(outputs, labels.float().unsqueeze(1))
             total_val_loss += val_loss.item()
@@ -127,7 +132,7 @@ for epoch in range(num_epochs):
 
 # Save the trained model with timestamp
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-model_name = f'model_{timestamp}.pth'
+model_name = f'{model_name}_model_{timestamp}.pth'
 model_path = os.path.join('../models', model_name)
 torch.save(model.state_dict(), model_path)
 

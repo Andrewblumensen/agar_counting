@@ -23,9 +23,9 @@ test_annotation_folder = '../data/raw/annotations_test'
 # Create dataset for inference
 test_dataset = TestDataset(test_image_folder, test_annotation_folder, transform=transform)
 
-# Load the trained model
-model = TransferLearningColonyCounter()
-model.load_state_dict(torch.load('../models/model_2024-02-03_14-47-49.pth'))
+
+model = TransferLearningColonyCounter()    
+model.load_state_dict(torch.load('../models/model_resnet18.pth'))
 model.eval()
 
 # Define a function to calculate the absolute error between true labels and predictions

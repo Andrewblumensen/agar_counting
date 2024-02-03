@@ -4,6 +4,7 @@ from torchvision import transforms
 import torchvision.models as models
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 
 # Define the model
 class ColonyCounter(nn.Module):
