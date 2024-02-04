@@ -25,7 +25,7 @@ test_dataset = TestDataset(test_image_folder, test_annotation_folder, transform=
 
 
 model = TransferLearningColonyCounter()    
-model.load_state_dict(torch.load('../models/model_resnet18.pth'))
+model.load_state_dict(torch.load('../models/resnet18_model_2024-02-04_12-57-46.pth'))
 model.eval()
 
 # Define a function to calculate the absolute error between true labels and predictions

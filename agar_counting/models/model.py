@@ -37,7 +37,7 @@ class TransferLearningColonyCounter(nn.Module):
         self.resnet = models.resnet18(pretrained=True)
         # Freeze the parameters of the pre-trained ResNet
         for param in self.resnet.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
         # Replace the final fully connected layer with a new one for our task
         self.resnet.fc = nn.Linear(self.resnet.fc.in_features, 1)
 

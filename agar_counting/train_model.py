@@ -20,7 +20,7 @@ print(device)
 
 # Initialize wandb
 wandb.login(key="ca8b8153dd94925f61e5df4e4fc0bf7b8b234ecc")
-wandb.init(project='MT_agar1', name="Restnet-18 big DS")
+wandb.init(project='MT_agar1', name="Restnet-18 big DS Retrain")
 
 # Read config from JSON file
 with open('config.json', 'r') as config_file:
