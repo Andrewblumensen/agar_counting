@@ -13,6 +13,7 @@ from data.make_dataset import BacteriaDataset
 import statistics
 import wandb
 import datetime
+from pytorch_forecasting.metrics import QuantileLoss
 
 # Check for CUDA availability
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -20,7 +21,8 @@ print(device)
 
 # Initialize wandb
 wandb.login(key="ca8b8153dd94925f61e5df4e4fc0bf7b8b234ecc")
-wandb.init(project='MT_agar1', name="Restnet-18 big DS Retrain")
+namewb = "Restnet-18 Pinball5"
+wandb.init(project='MT_agar1', name=namewb)
 
 # Read config from JSON file
 with open('config.json', 'r') as config_file:
@@ -55,7 +57,7 @@ elif dataset_size == "small":
     
 # Create dataset
 dataset = BacteriaDataset(image_folder, annotation_folder, transform=transform)
-
+        
 # Split dataset into train and validation sets
 dataset_size = len(dataset)
 indices = list(range(dataset_size))
@@ -81,6 +83,10 @@ if loss_f == "l1":
     criterion = nn.L1Loss()
 elif loss_f == "l2":
     criterion = nn.MSELoss()
+elif loss_f == "pinball95":
+    criterion = QuantileLoss([0.95])
+elif loss_f == "pinball5":
+    criterion = QuantileLoss([0.05])
 
 optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
@@ -113,26 +119,32 @@ for epoch in range(num_epochs):
 
     # Validation loop
     model.eval()
-    all_distances = []
     total_val_loss = 0.0
+    if loss_f != "pinball5" and loss_f != "pinball95":
+        all_distances = []
     with torch.no_grad():
         for images, labels in val_loader:
-            images, labels = images.to(device), labels.to(device)  # Move data to GPU if available
+            images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             val_loss = criterion(outputs, labels.float().unsqueeze(1))
             total_val_loss += val_loss.item()
-            distances = [calculate_avg_distance(labels, outputs) for labels, outputs in zip(labels, outputs)]
-            all_distances.extend(distances)
+            if loss_f != "pinball5" and loss_f != "pinball95":
+                distances = [calculate_avg_distance(labels, outputs) for labels, outputs in zip(labels, outputs)]
+                all_distances.extend(distances)
         avg_val_loss = total_val_loss / len(val_loader)
-        median_distance = statistics.median(all_distances)
-        print(f'Validation - Epoch [{epoch+1}/{num_epochs}], Loss: {avg_val_loss}, Median Distance: {median_distance}')
-
+        print(f'Validation - Epoch [{epoch+1}/{num_epochs}], Loss: {avg_val_loss}')
+        if loss_f != "pinball5" and loss_f != "pinball95":
+            median_distance = statistics.median(all_distances)
+            print(f'Median Distance: {median_distance}')
+    
         # Log metrics to wandb
-        wandb.log({'Val_loss': avg_val_loss, 'median_distance': median_distance})
+        wandb.log({'Val_loss': avg_val_loss})
+        if loss_f != "pinball5" and loss_f != "pinball95":
+            wandb.log({'median_distance': median_distance})
 
 # Save the trained model with timestamp
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-model_name = f'{model_name}_model_{timestamp}.pth'
+model_name = f'{namewb}_{timestamp}.pth'
 model_path = os.path.join('../models', model_name)
 torch.save(model.state_dict(), model_path)
 
