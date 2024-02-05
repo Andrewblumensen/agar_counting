@@ -21,7 +21,7 @@ print(device)
 
 # Initialize wandb
 wandb.login(key="ca8b8153dd94925f61e5df4e4fc0bf7b8b234ecc")
-namewb = "Restnet-18 Pinball5"
+namewb = "Restnet-18 pinball test"
 wandb.init(project='MT_agar1', name=namewb)
 
 # Read config from JSON file
@@ -73,20 +73,51 @@ val_sampler = SubsetRandomSampler(val_indices)
 train_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
 val_loader = DataLoader(dataset, batch_size=batch_size, sampler=val_sampler)
 
-# Initialize model, loss function, and optimizer
-if model_name == "resnet18":
-    model = TransferLearningColonyCounter().to(device)
-elif model_name == "cnn":
-    model = ColonyCounter().to(device)
+
+class QL(nn.Module):
+    def __init__(self, quantiles):
+        super().__init__()
+        self.quantiles = quantiles
+        
+    def forward(self, preds, target):
+        assert not target.requires_grad
+        assert preds.size(0) == target.size(0)
+        losses = []
+        for i, q in enumerate(self.quantiles):
+            errors = target - preds[:, i]
+            losses.append(
+                torch.max(
+                   (q-1) * errors, 
+                   q * errors
+            ).unsqueeze(1))
+        loss = torch.mean(
+            torch.sum(torch.cat(losses, dim=1), dim=1))
+        return loss
+
 
 if loss_f == "l1":
     criterion = nn.L1Loss()
+    class_num = 1
 elif loss_f == "l2":
     criterion = nn.MSELoss()
+    class_num = 1
 elif loss_f == "pinball95":
     criterion = QuantileLoss([0.95])
+    class_num = 1
 elif loss_f == "pinball5":
     criterion = QuantileLoss([0.05])
+    class_num = 1
+elif loss_f == "pinballc":
+    criterion = QL([0.05,0.5,0.95])
+    class_num = 3
+    
+    
+# Initialize model, loss function, and optimizer
+if model_name == "resnet18":
+    model = TransferLearningColonyCounter(class_num = class_num).to(device)
+elif model_name == "cnn":
+    model = ColonyCounter(class_num = class_num).to(device)    
+    
 
 optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
