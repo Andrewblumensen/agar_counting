@@ -5,9 +5,10 @@ import torch
 from torchvision import transforms
 import numpy as np
 import matplotlib.pyplot as plt
-from models.model import ColonyCounter, TransferLearningColonyCounter
+from models.model import ColonyCounter, TransferLearningColonyCounter, TLold
 from data.make_dataset import TestDataset
 import random
+from pytorch_forecasting.metrics import QuantileLoss
 
 # Define transforms for inference
 transform = transforms.Compose([
@@ -24,8 +25,8 @@ test_annotation_folder = '../data/raw/annotations_test'
 test_dataset = TestDataset(test_image_folder, test_annotation_folder, transform=transform)
 
 
-model = TransferLearningColonyCounter()    
-model.load_state_dict(torch.load('../models/Restnet-18 Pinball5_2024-02-05_17-06-00.pth'))
+model = TLold()    
+model.load_state_dict(torch.load('../models/Restnet-18 small DS Retrain_2024-02-07_12-04-56.pth'))
 model.eval()
 
 # Define a function to calculate the absolute error between true labels and predictions
@@ -38,7 +39,7 @@ predicted_counts = []
 true_labels = []
 
 # Define the number of samples to plot
-n_samples = 10
+n_samples = 1
 
 # Choose n_samples randomly
 random_indices = random.sample(range(len(test_dataset)), n_samples)
