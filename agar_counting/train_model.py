@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
 from torchvision import transforms
 import torch.nn as nn
 import torch.optim as optim
-from models.model import ColonyCounter, TransferLearningColonyCounter
+from models.model import ColonyCounter, TransferLearningColonyCounter, TLold
 from tqdm import tqdm
 import numpy as np
 from data.make_dataset import BacteriaDataset
@@ -21,7 +21,7 @@ print(device)
 
 # Initialize wandb
 wandb.login(key="ca8b8153dd94925f61e5df4e4fc0bf7b8b234ecc")
-namewb = "Restnet-18 Pinball5"
+namewb = "Restnet-18 small best"
 wandb.init(project='MT_agar1', name=namewb)
 
 # Read config from JSON file
@@ -73,20 +73,41 @@ val_sampler = SubsetRandomSampler(val_indices)
 train_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
 val_loader = DataLoader(dataset, batch_size=batch_size, sampler=val_sampler)
 
-# Initialize model, loss function, and optimizer
-if model_name == "resnet18":
-    model = TransferLearningColonyCounter().to(device)
-elif model_name == "cnn":
-    model = ColonyCounter().to(device)
+
+
+class CL(nn.Module):
+    def __init__(self, a):
+        super(CL, self).__init__()
+        self.a = a
+
+    def forward(self, pred, true):
+        loss = torch.zeros_like(true)
+        condition = true >= pred
+        loss[condition] = self.a * (true[condition] - pred[condition])
+        loss[~condition] = (1 - self.a) * (pred[~condition] - true[~condition])
+        return torch.mean(loss)
+
+
 
 if loss_f == "l1":
     criterion = nn.L1Loss()
+    class_num = 1
 elif loss_f == "l2":
     criterion = nn.MSELoss()
-elif loss_f == "pinball95":
-    criterion = QuantileLoss([0.95])
-elif loss_f == "pinball5":
-    criterion = QuantileLoss([0.05])
+    class_num = 1
+elif loss_f == "pinballc":
+    criterion = QuantileLoss([0.05,0.95]) + nn.L1Loss()
+    class_num = 3
+
+    
+# Initialize model, loss function, and optimizer
+if model_name == "resnet18":
+    model = TransferLearningColonyCounter(class_num = class_num).to(device)
+elif model_name == "resnetold":
+    model = TLold().to(device)
+elif model_name == "cnn":
+    model = ColonyCounter(class_num = class_num).to(device)    
+    
 
 optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
@@ -120,27 +141,24 @@ for epoch in range(num_epochs):
     # Validation loop
     model.eval()
     total_val_loss = 0.0
-    if loss_f != "pinball5" and loss_f != "pinball95":
-        all_distances = []
+    all_distances = []
     with torch.no_grad():
         for images, labels in val_loader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             val_loss = criterion(outputs, labels.float().unsqueeze(1))
             total_val_loss += val_loss.item()
-            if loss_f != "pinball5" and loss_f != "pinball95":
-                distances = [calculate_avg_distance(labels, outputs) for labels, outputs in zip(labels, outputs)]
-                all_distances.extend(distances)
+            distances = [calculate_avg_distance(labels, outputs) for labels, outputs in zip(labels, outputs)]
+            all_distances.extend(distances)
         avg_val_loss = total_val_loss / len(val_loader)
         print(f'Validation - Epoch [{epoch+1}/{num_epochs}], Loss: {avg_val_loss}')
-        if loss_f != "pinball5" and loss_f != "pinball95":
-            median_distance = statistics.median(all_distances)
-            print(f'Median Distance: {median_distance}')
+
+        median_distance = statistics.median(all_distances)
+        print(f'Median Distance: {median_distance}')
     
         # Log metrics to wandb
         wandb.log({'Val_loss': avg_val_loss})
-        if loss_f != "pinball5" and loss_f != "pinball95":
-            wandb.log({'median_distance': median_distance})
+        wandb.log({'median_distance': median_distance})
 
 # Save the trained model with timestamp
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
