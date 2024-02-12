@@ -21,7 +21,7 @@ print(device)
 
 # Initialize wandb
 wandb.login(key="ca8b8153dd94925f61e5df4e4fc0bf7b8b234ecc")
-namewb = "Restnet-18 small pinball7"
+namewb = "Restnet-18 small best"
 wandb.init(project='MT_agar1', name=namewb)
 
 # Read config from JSON file
@@ -96,9 +96,8 @@ elif loss_f == "l2":
     criterion = nn.MSELoss()
     class_num = 1
 elif loss_f == "pinballc":
-    a = 0.75
-    criterion = (1-a)*QuantileLoss([0.05,0.95]) + a*nn.L1Loss()
-    class_num = 2
+    criterion = QuantileLoss([0.05,0.95]) + nn.L1Loss()
+    class_num = 3
 
     
 # Initialize model, loss function, and optimizer

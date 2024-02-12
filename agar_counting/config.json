@@ -1,10 +1,10 @@
 {
-    "num_epochs": 30,
+    "num_epochs": 50,
     "batch_size": 64,
     "learning_rate": 0.001,
     "weightdecay": 0.001,
     "model": "resnet18",
-    "loss": "pinballc",
+    "loss": "l1",
     "val_split": 0.9,
     "dataset": "small"
 }

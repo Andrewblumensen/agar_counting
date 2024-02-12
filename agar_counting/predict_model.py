@@ -26,7 +26,7 @@ test_dataset = TestDataset(test_image_folder, test_annotation_folder, transform=
 
 
 model = TLold()    
-model.load_state_dict(torch.load('../models/Restnet-18 small DS Retrain_2024-02-07_12-04-56.pth'))
+model.load_state_dict(torch.load('../models/special/Restnet-18 small DS Retrain_2024-02-07_12-04-56.pth'))
 model.eval()
 
 # Define a function to calculate the absolute error between true labels and predictions
@@ -39,7 +39,7 @@ predicted_counts = []
 true_labels = []
 
 # Define the number of samples to plot
-n_samples = 1
+n_samples = 10
 
 # Choose n_samples randomly
 random_indices = random.sample(range(len(test_dataset)), n_samples)
@@ -68,10 +68,4 @@ for i in random_indices:
     plt.axis('off')
     plt.show()
 
-# Calculate mean absolute error and mean absolute percentage error
-mean_absolute_error = np.mean(absolute_errors)
-mean_absolute_percentage_error = np.mean([abs(error / true_label) * 100 for error, true_label in zip(absolute_errors, true_labels)])
 
-# Print statistical evaluation
-print(f"Mean Absolute Error: {mean_absolute_error}")
-print(f"Mean Absolute Percentage Error: {mean_absolute_percentage_error}%")

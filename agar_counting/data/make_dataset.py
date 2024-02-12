@@ -29,7 +29,6 @@ class TestDataset(torch.utils.data.Dataset):
         return image, annotation_path
     
     
-# Define dataset class
 class BacteriaDataset():
     def __init__(self, image_folder, annotation_folder, transform=None):
         self.image_folder = image_folder
@@ -50,6 +49,10 @@ class BacteriaDataset():
         with open(annotation_path) as f:
             annotation = json.load(f)
             colonies_number = annotation['colonies_number']
+        
+        # Skip data point if the colonies number is -1
+        if colonies_number == -1:
+            return None
         
         if self.transform:
             image = self.transform(image)
