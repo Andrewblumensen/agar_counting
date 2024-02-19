@@ -164,27 +164,3 @@ for i in random_indices:
 print(correctval1/n_val)
 print(correctval2/n_val)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

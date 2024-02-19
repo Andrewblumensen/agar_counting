@@ -1,0 +1,5 @@
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.py filter=lfs diff=lfs merge=lfs -text
+bacteria_colony_segmentation/data.zip filter=lfs diff=lfs merge=lfs -text
+bacteria_colony_segmentation/model.h5 filter=lfs diff=lfs merge=lfs -text
+bacteria_colony_segmentation/data/deibyrios[[:space:]]bacteria-classification[[:space:]]master[[:space:]]Data.zip filter=lfs diff=lfs merge=lfs -text

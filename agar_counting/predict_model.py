@@ -67,5 +67,3 @@ for i in random_indices:
     plt.title(f"True: {true_label}, Predicted: {predicted_count}")
     plt.axis('off')
     plt.show()
-
-
