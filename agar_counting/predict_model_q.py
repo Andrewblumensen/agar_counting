@@ -132,8 +132,11 @@ for i in random_indices:
     
     outputs = model(image.unsqueeze(0))
     
-    up = outputs[:,1].item() + qhat
-    low = outputs[:,0].item() - qhat
+    up_r = outputs[:,1].item()
+    low_r = outputs[:,0].item()
+    
+    up = up_r + qhat
+    low = low_r - qhat
     
     print(i)
     
@@ -153,7 +156,7 @@ for i in random_indices:
     
     plt.figure(figsize=(4, 4))
     plt.imshow(np.transpose(image.numpy(), (1, 2, 0)))
-    plt.title(f"True: {true_label}, OI: {outputs}, NI: {low}  {up}")
+    plt.title(f"True: {true_label}, OI:[{np.round(low_r,1)} , {np.round(up_r)}], NI:[{np.round(low)} , {np.round(up)}]")
     plt.axis('off')
     plt.show()
     

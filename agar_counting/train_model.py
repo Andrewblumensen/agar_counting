@@ -21,8 +21,8 @@ print(device)
 
 # Initialize wandb
 wandb.login(key="ca8b8153dd94925f61e5df4e4fc0bf7b8b234ecc")
-namewb = "Restnet-18 small best"
-wandb.init(project='MT_agar1', name=namewb)
+namewb = "Restnet-18_ensemble_20"
+wandb.init(project='Agar_ensemble', name=namewb)
 
 # Read config from JSON file
 with open('config.json', 'r') as config_file:
@@ -36,6 +36,14 @@ model_name = config['model']
 loss_f = config['loss']
 val_split = config['val_split']
 dataset_size = config['dataset']
+random_seed = config['random_seed']
+
+
+
+torch.manual_seed(random_seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 
 wandb.config.update(config, allow_val_change=True)
 
@@ -97,7 +105,7 @@ elif loss_f == "l2":
     class_num = 1
 elif loss_f == "pinballc":
     criterion = QuantileLoss([0.05,0.95]) + nn.L1Loss()
-    class_num = 3
+    class_num = 2
 
     
 # Initialize model, loss function, and optimizer
@@ -163,7 +171,7 @@ for epoch in range(num_epochs):
 # Save the trained model with timestamp
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 model_name = f'{namewb}_{timestamp}.pth'
-model_path = os.path.join('../models', model_name)
+model_path = os.path.join('../models/ensemble', model_name)
 torch.save(model.state_dict(), model_path)
 
 # Finish wandb run
